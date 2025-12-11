@@ -190,10 +190,10 @@ window.playSOSSound = async function() {
             await audioContext.resume();
         }
         
-        const dot = 0.25;      // seconds
-        const dash = 0.75;     // 3x dot
-        const gap = 0.22;      // between tones
-        const charGap = 0.45;  // between characters
+        const dot = 0.30;      // seconds
+        const dash = 0.90;     // 3x dot
+        const gap = 0.30;      // between tones
+        const charGap = 0.50;  // between characters
         const freq = 850;
         
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -211,8 +211,8 @@ window.playSOSSound = async function() {
                 
                 // Envelope for clarity
                 gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.65, now + 0.03);
-                gain.gain.linearRampToValueAtTime(0.05, now + duration - 0.05);
+                gain.gain.linearRampToValueAtTime(0.70, now + 0.03);
+                gain.gain.linearRampToValueAtTime(0.08, now + duration - 0.06);
                 gain.gain.linearRampToValueAtTime(0, now + duration);
                 
                 osc.start(now);
@@ -234,8 +234,8 @@ window.playSOSSound = async function() {
         await playTone(dot); await sleep(gap * 1000);
         await playTone(dot);
         
-        // Close context after playback to free resources
-        setTimeout(() => audioContext.close(), 400);
+        // Close context after playback to free resources (long enough for full pattern)
+        setTimeout(() => audioContext.close(), 8000);
     } catch (e) {
         console.log('Audio context not available');
     }
