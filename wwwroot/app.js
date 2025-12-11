@@ -139,3 +139,32 @@ window.playSuccessSound = function() {
         console.log('Audio context not available');
     }
 }
+
+// Delete/backspace sound effect - short pop tone
+window.playDeleteSound = function() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create oscillator for delete sound
+        const osc = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        osc.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Short descending tone for delete
+        osc.frequency.setValueAtTime(450, audioContext.currentTime);
+        osc.frequency.linearRampToValueAtTime(200, audioContext.currentTime + 0.05);
+        osc.type = 'sine';
+        
+        // Quick attack and release for pop effect
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.01);
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.05);
+        
+        osc.start(audioContext.currentTime);
+        osc.stop(audioContext.currentTime + 0.05);
+    } catch (e) {
+        console.log('Audio context not available');
+    }
+}
