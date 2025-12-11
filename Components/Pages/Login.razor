@@ -338,6 +338,7 @@
         
         if (AuthService.VerifyPin(pin))
         {
+            await JS.InvokeVoidAsync("playSuccessSound");
             NavigationManager.NavigateTo("/", forceLoad: true);
         }
         else

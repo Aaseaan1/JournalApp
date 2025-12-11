@@ -96,3 +96,46 @@ window.playWarningSound = function() {
         console.log('Audio context not available');
     }
 }
+
+// Success/confirmation sound effect - two ascending tones
+window.playSuccessSound = function() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // First tone
+        const osc1 = audioContext.createOscillator();
+        const gainNode1 = audioContext.createGain();
+        
+        osc1.connect(gainNode1);
+        gainNode1.connect(audioContext.destination);
+        
+        osc1.frequency.value = 600;
+        osc1.type = 'sine';
+        
+        gainNode1.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode1.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.02);
+        gainNode1.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.12);
+        
+        osc1.start(audioContext.currentTime);
+        osc1.stop(audioContext.currentTime + 0.12);
+        
+        // Second tone (higher)
+        const osc2 = audioContext.createOscillator();
+        const gainNode2 = audioContext.createGain();
+        
+        osc2.connect(gainNode2);
+        gainNode2.connect(audioContext.destination);
+        
+        osc2.frequency.value = 800;
+        osc2.type = 'sine';
+        
+        gainNode2.gain.setValueAtTime(0, audioContext.currentTime + 0.12);
+        gainNode2.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.14);
+        gainNode2.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.24);
+        
+        osc2.start(audioContext.currentTime + 0.12);
+        osc2.stop(audioContext.currentTime + 0.24);
+    } catch (e) {
+        console.log('Audio context not available');
+    }
+}
