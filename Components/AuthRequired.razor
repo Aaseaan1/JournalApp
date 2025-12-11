@@ -1,0 +1,39 @@
+@using JournalApp.Services
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+@if (AuthService.IsAuthenticated || !AuthService.HasPinSet)
+{
+    @ChildContent
+}
+else
+{
+    <div class="container py-5">
+        <div class="alert alert-warning text-center">
+            <h4>🔒 Authentication Required</h4>
+            <p>Please log in to access this page.</p>
+            <a href="/login" class="btn btn-primary">Go to Login</a>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // If not authenticated and PIN is set, redirect to login
+        if (!AuthService.IsAuthenticated && AuthService.HasPinSet)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+
+        AuthService.OnAuthStateChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AuthService.OnAuthStateChanged -= StateHasChanged;
+    }
+}

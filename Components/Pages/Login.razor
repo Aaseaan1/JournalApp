@@ -1,0 +1,136 @@
+@page "/login"
+@using JournalApp.Services
+@rendermode InteractiveServer
+
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Login</PageTitle>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="text-center mb-4">🔐 Journal Login</h3>
+                    
+                    @if (!AuthService.HasPinSet)
+                    {
+                        <div class="alert alert-info">
+                            Welcome! Please set up your security PIN to protect your journal.
+                        </div>
+                        
+                        <EditForm Model="@this" OnValidSubmit="SetupPin">
+                            <div class="mb-3">
+                                <label class="form-label">Create PIN (minimum 4 characters)</label>
+                                <input type="password" class="form-control" @bind="newPin" 
+                                       placeholder="Enter PIN" required minlength="4" />
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Confirm PIN</label>
+                                <input type="password" class="form-control" @bind="confirmPin" 
+                                       placeholder="Confirm PIN" required minlength="4" />
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger">@errorMessage</div>
+                            }
+                            
+                            <button type="submit" class="btn btn-primary w-100">Set PIN</button>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <EditForm Model="@this" OnValidSubmit="PerformLogin">
+                            <div class="mb-3">
+                                <label class="form-label">Enter PIN</label>
+                                <input type="password" class="form-control" @bind="pin" 
+                                       placeholder="Enter your PIN" required autofocus />
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger">@errorMessage</div>
+                            }
+                            
+                            <button type="submit" class="btn btn-primary w-100">Login</button>
+                        </EditForm>
+                        
+                        <hr />
+                        <button class="btn btn-link w-100" @onclick="ResetPin">
+                            Forgot PIN? Reset Security
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string pin = "";
+    private string newPin = "";
+    private string confirmPin = "";
+    private string errorMessage = "";
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private void SetupPin()
+    {
+        errorMessage = "";
+        
+        if (newPin != confirmPin)
+        {
+            errorMessage = "PINs do not match. Please try again.";
+            return;
+        }
+
+        if (newPin.Length < 4)
+        {
+            errorMessage = "PIN must be at least 4 characters long.";
+            return;
+        }
+
+        try
+        {
+            AuthService.SetPin(newPin);
+            NavigationManager.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private void PerformLogin()
+    {
+        errorMessage = "";
+        
+        if (AuthService.VerifyPin(pin))
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Invalid PIN. Please try again.";
+            pin = "";
+        }
+    }
+
+    private void ResetPin()
+    {
+        // Simply reset without confirmation for now
+        AuthService.ResetPin();
+        errorMessage = "PIN has been reset. You can now set a new PIN.";
+        newPin = "";
+        confirmPin = "";
+    }
+}

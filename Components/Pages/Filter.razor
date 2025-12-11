@@ -1,0 +1,212 @@
+@page "/filter"
+@using JournalApp.Models
+@using JournalApp.Services
+@rendermode InteractiveServer
+
+@inject JournalService JournalService
+@inject NavigationManager Navigation
+
+<PageTitle>Filter Entries</PageTitle>
+
+<div class="container py-5">
+    <h1>Filter Journal Entries</h1>
+    <hr />
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(activeTab == "date" ? "active" : "")" 
+                            @onclick="SetDateTab">
+                        By Date Range
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(activeTab == "mood" ? "active" : "")" 
+                            @onclick="SetMoodTab">
+                        By Mood
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(activeTab == "tag" ? "active" : "")" 
+                            @onclick="SetTagTab">
+                        By Tag
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    @if (activeTab == "date")
+    {
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <label class="form-label">Start Date</label>
+                <input type="date" class="form-control" @bind="startDate">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">End Date</label>
+                <input type="date" class="form-control" @bind="endDate">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary d-block" @onclick="FilterByDateRange">
+                    Apply Filter
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (activeTab == "mood")
+    {
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <label class="form-label">Select Mood</label>
+                <select class="form-select" @bind="selectedMood">
+                    <option value="">-- Select Mood --</option>
+                    <optgroup label="Positive">
+                        <option value="Happy">😊 Happy</option>
+                        <option value="Excited">🤩 Excited</option>
+                        <option value="Relaxed">😌 Relaxed</option>
+                        <option value="Grateful">🙏 Grateful</option>
+                        <option value="Confident">💪 Confident</option>
+                    </optgroup>
+                    <optgroup label="Neutral">
+                        <option value="Calm">😐 Calm</option>
+                        <option value="Thoughtful">🤔 Thoughtful</option>
+                        <option value="Curious">👀 Curious</option>
+                        <option value="Nostalgic">📸 Nostalgic</option>
+                        <option value="Bored">😑 Bored</option>
+                    </optgroup>
+                    <optgroup label="Negative">
+                        <option value="Sad">😢 Sad</option>
+                        <option value="Angry">😠 Angry</option>
+                        <option value="Stressed">😰 Stressed</option>
+                        <option value="Lonely">😔 Lonely</option>
+                        <option value="Anxious">😟 Anxious</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary d-block" @onclick="FilterByMood">
+                    Apply Filter
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (activeTab == "tag")
+    {
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <label class="form-label">Tag</label>
+                <input type="text" class="form-control" @bind="selectedTag" 
+                       placeholder="Enter tag name...">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary d-block" @onclick="FilterByTag">
+                    Apply Filter
+                </button>
+            </div>
+        </div>
+    }
+
+    <button class="btn btn-secondary mb-4" @onclick="ClearFilter">Clear Filter</button>
+
+    @if (filteredEntries != null)
+    {
+        <h4>Found @filteredEntries.Count result(s)</h4>
+        
+        @if (filteredEntries.Count == 0)
+        {
+            <div class="alert alert-warning">No entries found matching your filter.</div>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var entry in filteredEntries)
+                {
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title">@entry.Title</h5>
+                                    <span class="badge bg-info">@entry.PrimaryMood</span>
+                                </div>
+                                <p class="card-text text-truncate">@entry.Content</p>
+                                <small class="text-muted">
+                                    @entry.EntryDate.ToString("MMM dd, yyyy")
+                                </small>
+                                @if (!string.IsNullOrEmpty(entry.Tags))
+                                {
+                                    <div class="mt-2">
+                                        @foreach (var tag in entry.Tags.Split(new[] { ',' }))
+                                        {
+                                            <span class="badge bg-secondary">@tag.Trim()</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        @onclick="() => ViewEntry(entry.Id)">
+                                    View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private string activeTab = "date";
+    private DateTime startDate = DateTime.Today.AddMonths(-1);
+    private DateTime endDate = DateTime.Today;
+    private string selectedMood = string.Empty;
+    private string selectedTag = string.Empty;
+    private List<JournalEntry>? filteredEntries;
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        filteredEntries = null;
+    }
+
+    private void SetDateTab() => SetActiveTab("date");
+    private void SetMoodTab() => SetActiveTab("mood");
+    private void SetTagTab() => SetActiveTab("tag");
+
+    private async Task FilterByDateRange()
+    {
+        filteredEntries = await JournalService.FilterByDateRangeAsync(startDate, endDate);
+    }
+
+    private async Task FilterByMood()
+    {
+        if (string.IsNullOrWhiteSpace(selectedMood)) return;
+        filteredEntries = await JournalService.FilterByMoodAsync(selectedMood);
+    }
+
+    private async Task FilterByTag()
+    {
+        if (string.IsNullOrWhiteSpace(selectedTag)) return;
+        filteredEntries = await JournalService.FilterByTagAsync(selectedTag);
+    }
+
+    private void ClearFilter()
+    {
+        filteredEntries = null;
+        selectedMood = string.Empty;
+        selectedTag = string.Empty;
+    }
+
+    private void ViewEntry(int id)
+    {
+        Navigation.NavigateTo("/view/" + id);
+    }
+}

@@ -1,0 +1,125 @@
+@page "/search"
+@using JournalApp.Models
+@using JournalApp.Services
+@rendermode InteractiveServer
+
+@inject JournalService JournalService
+@inject NavigationManager Navigation
+
+<PageTitle>Search Entries</PageTitle>
+
+<div class="container py-5">
+    <h1>Search Journal Entries</h1>
+    <hr />
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="input-group">
+                <input type="text" class="form-control" @bind="searchQuery" 
+                       placeholder="Search by title or content..." 
+                       @onkeydown="HandleKeyPress">
+                <button class="btn btn-primary" @onclick="PerformSearch">
+                    🔍 Search
+                </button>
+                <button class="btn btn-secondary" @onclick="ClearSearch">
+                    Clear
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (isSearching)
+    {
+        <div class="alert alert-info">Searching...</div>
+    }
+    else if (searchResults != null)
+    {
+        <h4>Found @searchResults.Count result(s)</h4>
+        
+        @if (searchResults.Count == 0)
+        {
+            <div class="alert alert-warning">No entries found matching your search.</div>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var entry in searchResults)
+                {
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title">@entry.Title</h5>
+                                    <span class="badge bg-info">@entry.PrimaryMood</span>
+                                </div>
+                                <p class="card-text">@GetPreview(entry.Content)</p>
+                                <small class="text-muted">
+                                    @entry.EntryDate.ToString("MMM dd, yyyy")
+                                </small>
+                                @if (!string.IsNullOrEmpty(entry.Tags))
+                                {
+                                    <div class="mt-2">
+                                        @foreach (var tag in entry.Tags.Split(new[] { ',' }))
+                                        {
+                                            <span class="badge bg-secondary">@tag.Trim()</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        @onclick="() => ViewEntry(entry.Id)">
+                                    View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private string searchQuery = string.Empty;
+    private List<JournalEntry>? searchResults;
+    private bool isSearching = false;
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            searchResults = null;
+            return;
+        }
+
+        isSearching = true;
+        searchResults = await JournalService.SearchEntriesAsync(searchQuery);
+        isSearching = false;
+    }
+
+    private void ClearSearch()
+    {
+        searchQuery = string.Empty;
+        searchResults = null;
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await PerformSearch();
+        }
+    }
+
+    private string GetPreview(string content)
+    {
+        if (string.IsNullOrEmpty(content)) return string.Empty;
+        return content.Length > 150 ? content.Substring(0, 150) + "..." : content;
+    }
+
+    private void ViewEntry(int id)
+    {
+        Navigation.NavigateTo("/view/" + id);
+    }
+}

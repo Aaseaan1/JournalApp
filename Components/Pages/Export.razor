@@ -1,0 +1,110 @@
+@page "/export"
+@using JournalApp.Models
+@using JournalApp.Services
+@using Microsoft.JSInterop
+@rendermode InteractiveServer
+
+@inject JournalService JournalService
+@inject PdfExportService PdfExportService
+@inject IJSRuntime JS
+
+<PageTitle>Export to PDF</PageTitle>
+
+<div class="container py-5">
+    <h1>📄 Export Journal to PDF</h1>
+    <hr />
+
+    @if (entries == null)
+    {
+        <div class="alert alert-info">Loading entries...</div>
+    }
+    else if (entries.Count == 0)
+    {
+        <div class="alert alert-warning">No entries to export.</div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>Export Options</h5>
+                <p>You have <strong>@entries.Count</strong> journal entries.</p>
+                
+                <button class="btn btn-primary" @onclick="ExportAllEntries" disabled="@isExporting">
+                    @if (isExporting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    Export All Entries to PDF
+                </button>
+            </div>
+        </div>
+
+        <h4>Select Individual Entries to Export</h4>
+        <div class="row">
+            @foreach (var entry in entries)
+            {
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@entry.Title</h5>
+                            <p class="text-muted small">@entry.EntryDate.ToString("MMM dd, yyyy")</p>
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    @onclick="() => ExportSingleEntry(entry)"
+                                    disabled="@isExporting">
+                                📄 Export to PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<JournalEntry>? entries;
+    private bool isExporting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        entries = await JournalService.GetAllEntriesAsync();
+    }
+
+    private async Task ExportSingleEntry(JournalEntry entry)
+    {
+        isExporting = true;
+        try
+        {
+            var pdfBytes = PdfExportService.ExportEntryToPdf(entry);
+            var fileName = $"journal_{entry.EntryDate:yyyy-MM-dd}.pdf";
+            await DownloadFile(fileName, pdfBytes);
+        }
+        finally
+        {
+            isExporting = false;
+        }
+    }
+
+    private async Task ExportAllEntries()
+    {
+        if (entries == null || entries.Count == 0) return;
+        
+        isExporting = true;
+        try
+        {
+            var pdfBytes = PdfExportService.ExportMultipleEntriesToPdf(entries);
+            var fileName = $"journal_all_entries_{DateTime.Now:yyyy-MM-dd}.pdf";
+            await DownloadFile(fileName, pdfBytes);
+        }
+        finally
+        {
+            isExporting = false;
+        }
+    }
+
+    private async Task DownloadFile(string fileName, byte[] fileBytes)
+    {
+        var base64 = Convert.ToBase64String(fileBytes);
+        await JS.InvokeVoidAsync("downloadFile", fileName, base64);
+    }
+}

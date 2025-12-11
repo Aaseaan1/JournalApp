@@ -1,0 +1,186 @@
+@page "/create"
+@using JournalApp.Models
+@using JournalApp.Services
+@rendermode InteractiveServer
+@inject JournalService JournalService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Create New Entry</PageTitle>
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <h1>Create New Entry</h1>
+            <hr />
+
+            <div class="form-group mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" 
+                       @bind="entry.Title" placeholder="Entry title...">
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="primaryMood" class="form-label">Primary Mood *</label>
+                <select class="form-select" id="primaryMood" @bind="entry.PrimaryMood">
+                    <optgroup label="Positive">
+                        <option value="Happy">😊 Happy</option>
+                        <option value="Excited">🤩 Excited</option>
+                        <option value="Relaxed">😌 Relaxed</option>
+                        <option value="Grateful">🙏 Grateful</option>
+                        <option value="Confident">💪 Confident</option>
+                    </optgroup>
+                    <optgroup label="Neutral">
+                        <option value="Calm">😐 Calm</option>
+                        <option value="Thoughtful">🤔 Thoughtful</option>
+                        <option value="Curious">👀 Curious</option>
+                        <option value="Nostalgic">📸 Nostalgic</option>
+                        <option value="Bored">😑 Bored</option>
+                    </optgroup>
+                    <optgroup label="Negative">
+                        <option value="Sad">😢 Sad</option>
+                        <option value="Angry">😠 Angry</option>
+                        <option value="Stressed">😰 Stressed</option>
+                        <option value="Lonely">😔 Lonely</option>
+                        <option value="Anxious">😟 Anxious</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="secondaryMood1" class="form-label">Secondary Mood 1 (Optional)</label>
+                        <select class="form-select" id="secondaryMood1" @bind="entry.SecondaryMood1">
+                            <option value="">-- None --</option>
+                            <optgroup label="Positive">
+                                <option value="Happy">😊 Happy</option>
+                                <option value="Excited">🤩 Excited</option>
+                                <option value="Relaxed">😌 Relaxed</option>
+                                <option value="Grateful">🙏 Grateful</option>
+                                <option value="Confident">💪 Confident</option>
+                            </optgroup>
+                            <optgroup label="Neutral">
+                                <option value="Calm">😐 Calm</option>
+                                <option value="Thoughtful">🤔 Thoughtful</option>
+                                <option value="Curious">👀 Curious</option>
+                                <option value="Nostalgic">📸 Nostalgic</option>
+                                <option value="Bored">😑 Bored</option>
+                            </optgroup>
+                            <optgroup label="Negative">
+                                <option value="Sad">😢 Sad</option>
+                                <option value="Angry">😠 Angry</option>
+                                <option value="Stressed">😰 Stressed</option>
+                                <option value="Lonely">😔 Lonely</option>
+                                <option value="Anxious">😟 Anxious</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="secondaryMood2" class="form-label">Secondary Mood 2 (Optional)</label>
+                        <select class="form-select" id="secondaryMood2" @bind="entry.SecondaryMood2">
+                            <option value="">-- None --</option>
+                            <optgroup label="Positive">
+                                <option value="Happy">😊 Happy</option>
+                                <option value="Excited">🤩 Excited</option>
+                                <option value="Relaxed">😌 Relaxed</option>
+                                <option value="Grateful">🙏 Grateful</option>
+                                <option value="Confident">💪 Confident</option>
+                            </optgroup>
+                            <optgroup label="Neutral">
+                                <option value="Calm">😐 Calm</option>
+                                <option value="Thoughtful">🤔 Thoughtful</option>
+                                <option value="Curious">👀 Curious</option>
+                                <option value="Nostalgic">📸 Nostalgic</option>
+                                <option value="Bored">😑 Bored</option>
+                            </optgroup>
+                            <optgroup label="Negative">
+                                <option value="Sad">😢 Sad</option>
+                                <option value="Angry">😠 Angry</option>
+                                <option value="Stressed">😰 Stressed</option>
+                                <option value="Lonely">😔 Lonely</option>
+                                <option value="Anxious">😟 Anxious</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="category" class="form-label">Category</label>
+                <input type="text" class="form-control" id="category" 
+                       @bind="entry.Category" placeholder="e.g., Work, Personal, Health">
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="tags" class="form-label">Tags (comma-separated)</label>
+                <input type="text" class="form-control" id="tags" 
+                       @bind="entry.Tags" placeholder="e.g., Work, Health, Travel">
+                <small class="form-text text-muted">Suggested: Work, Career, Studies, Family, Friends, Health, Fitness, Travel, etc.</small>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="content" class="form-label">Entry Content</label>
+                <textarea class="form-control" id="content" rows="10" 
+                          @bind="entry.Content" placeholder="Write your thoughts here..."></textarea>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>Word Count:</strong> @(string.IsNullOrWhiteSpace(entry.Content) ? 0 : entry.Content.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length)
+            </div>
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary" @onclick="SaveEntry">Save Entry</button>
+                <button class="btn btn-secondary" @onclick="GoHome">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private JournalEntry entry = new();
+
+    private int GetWordCount()
+    {
+        return string.IsNullOrWhiteSpace(entry.Content) ? 0 : entry.Content.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task SaveEntry()
+    {
+        if (string.IsNullOrWhiteSpace(entry.Title))
+        {
+            await JS.InvokeVoidAsync("alert", "Please enter a title");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(entry.PrimaryMood))
+        {
+            await JS.InvokeVoidAsync("alert", "Please select a primary mood");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(entry.Content))
+        {
+            await JS.InvokeVoidAsync("alert", "Please enter some content");
+            return;
+        }
+
+        // Check if entry already exists for today
+        bool hasEntry = await JournalService.HasEntryForDateAsync(DateTime.Today);
+        if (hasEntry)
+        {
+            await JS.InvokeVoidAsync("alert", "You already have an entry for today. Please edit the existing entry.");
+            return;
+        }
+
+        await JournalService.AddEntryAsync(entry);
+        Navigation.NavigateTo("/");
+    }
+}

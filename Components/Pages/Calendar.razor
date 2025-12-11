@@ -1,0 +1,176 @@
+@page "/calendar"
+@using JournalApp.Models
+@using JournalApp.Services
+@rendermode InteractiveServer
+
+@inject JournalService JournalService
+@inject NavigationManager Navigation
+
+<PageTitle>Calendar View</PageTitle>
+
+<div class="container py-5">
+    <h1>📅 Calendar View</h1>
+    <hr />
+
+    <div class="row mb-4">
+        <div class="col-md-12 d-flex justify-content-between align-items-center">
+            <button class="btn btn-outline-primary" @onclick="PreviousMonth">
+                ← Previous
+            </button>
+            <h3>@currentMonth.ToString("MMMM yyyy")</h3>
+            <button class="btn btn-outline-primary" @onclick="NextMonth">
+                Next →
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-bordered text-center">
+                <thead>
+                    <tr>
+                        <th>Sun</th>
+                        <th>Mon</th>
+                        <th>Tue</th>
+                        <th>Wed</th>
+                        <th>Thu</th>
+                        <th>Fri</th>
+                        <th>Sat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var week in GetCalendarWeeks())
+                    {
+                        <tr>
+                            @foreach (var day in week)
+                            {
+                                @if (day.HasValue)
+                                {
+                                    var dateToCheck = new DateTime(currentMonth.Year, currentMonth.Month, day.Value);
+                                    var hasEntry = HasEntryForDate(dateToCheck);
+                                    var isToday = dateToCheck == DateTime.Today;
+                                    var entry = GetEntryForDate(dateToCheck);
+
+                                    <td class="@GetCellClass(isToday, hasEntry)" 
+                                        style="height: 100px; vertical-align: top; cursor: @(hasEntry ? "pointer" : "default");"
+                                        @onclick="() => OnDateClick(dateToCheck)">
+                                        <div class="p-2">
+                                            <strong>@day.Value</strong>
+                                            @if (hasEntry && entry != null)
+                                            {
+                                                <div class="mt-1">
+                                                    <span class="badge bg-success" style="font-size: 0.7rem;">
+                                                        @entry.PrimaryMood
+                                                    </span>
+                                                    <div class="small text-truncate mt-1" style="font-size: 0.7rem;">
+                                                        @entry.Title
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td class="bg-light"></td>
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <span class="badge bg-primary me-2">Today</span>
+        <span class="badge bg-success me-2">Has Entry</span>
+    </div>
+</div>
+
+@code {
+    private DateTime currentMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private List<JournalEntry>? entries;
+
+    protected override async Task OnInitializedAsync()
+    {
+        entries = await JournalService.GetAllEntriesAsync();
+    }
+
+    private void PreviousMonth()
+    {
+        currentMonth = currentMonth.AddMonths(-1);
+    }
+
+    private void NextMonth()
+    {
+        currentMonth = currentMonth.AddMonths(1);
+    }
+
+    private List<List<int?>> GetCalendarWeeks()
+    {
+        var weeks = new List<List<int?>>();
+        var firstDay = new DateTime(currentMonth.Year, currentMonth.Month, 1);
+        var lastDay = firstDay.AddMonths(1).AddDays(-1);
+        var startDayOfWeek = (int)firstDay.DayOfWeek;
+
+        var currentWeek = new List<int?>();
+        
+        // Add empty cells for days before the first day
+        for (int i = 0; i < startDayOfWeek; i++)
+        {
+            currentWeek.Add(null);
+        }
+
+        // Add all days of the month
+        for (int day = 1; day <= lastDay.Day; day++)
+        {
+            currentWeek.Add(day);
+            
+            if (currentWeek.Count == 7)
+            {
+                weeks.Add(currentWeek);
+                currentWeek = new List<int?>();
+            }
+        }
+
+        // Add empty cells for remaining days
+        if (currentWeek.Count > 0)
+        {
+            while (currentWeek.Count < 7)
+            {
+                currentWeek.Add(null);
+            }
+            weeks.Add(currentWeek);
+        }
+
+        return weeks;
+    }
+
+    private bool HasEntryForDate(DateTime date)
+    {
+        return entries?.Any(e => e.EntryDate.Date == date.Date) ?? false;
+    }
+
+    private JournalEntry? GetEntryForDate(DateTime date)
+    {
+        return entries?.FirstOrDefault(e => e.EntryDate.Date == date.Date);
+    }
+
+    private string GetCellClass(bool isToday, bool hasEntry)
+    {
+        if (isToday && hasEntry) return "table-primary border-success border-3";
+        if (isToday) return "table-primary";
+        if (hasEntry) return "table-success";
+        return "";
+    }
+
+    private void OnDateClick(DateTime date)
+    {
+        var entry = GetEntryForDate(date);
+        if (entry != null)
+        {
+            Navigation.NavigateTo("/view/" + entry.Id);
+        }
+    }
+}

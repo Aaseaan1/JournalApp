@@ -1,0 +1,325 @@
+@page "/analytics"
+@using JournalApp.Models
+@using JournalApp.Services
+@rendermode InteractiveServer
+
+@inject JournalService JournalService
+
+<PageTitle>Analytics Dashboard</PageTitle>
+
+<div class="container py-5">
+    <h1>📊 Analytics Dashboard</h1>
+    <hr />
+
+    @if (entries == null)
+    {
+        <div class="alert alert-info">Loading analytics...</div>
+    }
+    else if (entries.Count == 0)
+    {
+        <div class="alert alert-warning">No entries yet. Start journaling to see analytics!</div>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Total Entries -->
+            <div class="col-md-3 mb-4">
+                <div class="card text-white bg-primary">
+                    <div class="card-body text-center">
+                        <h3>@entries.Count</h3>
+                        <p class="mb-0">Total Entries</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Streak -->
+            <div class="col-md-3 mb-4">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center">
+                        <h3>@GetCurrentStreak()</h3>
+                        <p class="mb-0">Day Streak</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Words -->
+            <div class="col-md-3 mb-4">
+                <div class="card text-white bg-info">
+                    <div class="card-body text-center">
+                        <h3>@GetAverageWords()</h3>
+                        <p class="mb-0">Avg Words/Entry</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Words -->
+            <div class="col-md-3 mb-4">
+                <div class="card text-white bg-warning">
+                    <div class="card-body text-center">
+                        <h3>@GetTotalWords()</h3>
+                        <p class="mb-0">Total Words</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mood Distribution -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Mood Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var mood in GetMoodDistribution())
+                        {
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>@mood.Key</span>
+                                    <span>@mood.Value (@GetPercentage(mood.Value, entries.Count)%)</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: @GetPercentage(mood.Value, entries.Count)%">
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Most Used Tags -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Most Used Tags</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (GetTopTags().Any())
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var tag in GetTopTags().Take(10))
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        @tag.Key
+                                        <span class="badge bg-primary rounded-pill">@tag.Value</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No tags used yet</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Categories Used</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (GetCategories().Any())
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var category in GetCategories())
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        @category.Key
+                                        <span class="badge bg-secondary rounded-pill">@category.Value</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No categories used yet</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Writing Frequency (Last 30 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Total entries in last 30 days: <strong>@GetEntriesLast30Days()</strong></p>
+                        <p>Missed days: <strong>@GetMissedDays()</strong></p>
+                        <p>Longest streak: <strong>@GetLongestStreak() days</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<JournalEntry>? entries;
+
+    protected override async Task OnInitializedAsync()
+    {
+        entries = await JournalService.GetAllEntriesAsync();
+    }
+
+    private int GetCurrentStreak()
+    {
+        if (entries == null || !entries.Any()) return 0;
+
+        var sortedDates = entries.OrderByDescending(e => e.EntryDate).Select(e => e.EntryDate.Date).ToList();
+        int streak = 0;
+        var checkDate = DateTime.Today;
+
+        foreach (var date in sortedDates)
+        {
+            if (date == checkDate)
+            {
+                streak++;
+                checkDate = checkDate.AddDays(-1);
+            }
+            else if (date < checkDate)
+            {
+                break;
+            }
+        }
+
+        return streak;
+    }
+
+    private int GetLongestStreak()
+    {
+        if (entries == null || !entries.Any()) return 0;
+
+        var sortedDates = entries.OrderBy(e => e.EntryDate).Select(e => e.EntryDate.Date).ToList();
+        int maxStreak = 1;
+        int currentStreak = 1;
+
+        for (int i = 1; i < sortedDates.Count; i++)
+        {
+            if ((sortedDates[i] - sortedDates[i - 1]).Days == 1)
+            {
+                currentStreak++;
+                maxStreak = Math.Max(maxStreak, currentStreak);
+            }
+            else
+            {
+                currentStreak = 1;
+            }
+        }
+
+        return maxStreak;
+    }
+
+    private int GetAverageWords()
+    {
+        if (entries == null || !entries.Any()) return 0;
+        return (int)entries.Average(e => e.WordCount);
+    }
+
+    private int GetTotalWords()
+    {
+        if (entries == null) return 0;
+        return entries.Sum(e => e.WordCount);
+    }
+
+    private Dictionary<string, int> GetMoodDistribution()
+    {
+        if (entries == null) return new Dictionary<string, int>();
+
+        var distribution = new Dictionary<string, int>();
+        
+        foreach (var entry in entries)
+        {
+            if (!string.IsNullOrEmpty(entry.PrimaryMood))
+            {
+                if (distribution.ContainsKey(entry.PrimaryMood))
+                    distribution[entry.PrimaryMood]++;
+                else
+                    distribution[entry.PrimaryMood] = 1;
+            }
+        }
+
+        return distribution.OrderByDescending(kv => kv.Value).ToDictionary(kv => kv.Key, kv => kv.Value);
+    }
+
+    private Dictionary<string, int> GetTopTags()
+    {
+        if (entries == null) return new Dictionary<string, int>();
+
+        var tagCounts = new Dictionary<string, int>();
+
+        foreach (var entry in entries)
+        {
+            if (!string.IsNullOrEmpty(entry.Tags))
+            {
+                var tags = entry.Tags.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var tag in tags)
+                {
+                    var trimmedTag = tag.Trim();
+                    if (tagCounts.ContainsKey(trimmedTag))
+                        tagCounts[trimmedTag]++;
+                    else
+                        tagCounts[trimmedTag] = 1;
+                }
+            }
+        }
+
+        return tagCounts.OrderByDescending(kv => kv.Value).ToDictionary(kv => kv.Key, kv => kv.Value);
+    }
+
+    private Dictionary<string, int> GetCategories()
+    {
+        if (entries == null) return new Dictionary<string, int>();
+
+        var categoryCounts = new Dictionary<string, int>();
+
+        foreach (var entry in entries)
+        {
+            if (!string.IsNullOrEmpty(entry.Category))
+            {
+                if (categoryCounts.ContainsKey(entry.Category))
+                    categoryCounts[entry.Category]++;
+                else
+                    categoryCounts[entry.Category] = 1;
+            }
+        }
+
+        return categoryCounts.OrderByDescending(kv => kv.Value).ToDictionary(kv => kv.Key, kv => kv.Value);
+    }
+
+    private int GetEntriesLast30Days()
+    {
+        if (entries == null) return 0;
+        var thirtyDaysAgo = DateTime.Today.AddDays(-30);
+        return entries.Count(e => e.EntryDate >= thirtyDaysAgo);
+    }
+
+    private int GetMissedDays()
+    {
+        if (entries == null || !entries.Any()) return 0;
+        
+        var thirtyDaysAgo = DateTime.Today.AddDays(-30);
+        var entryDates = entries.Where(e => e.EntryDate >= thirtyDaysAgo)
+                                .Select(e => e.EntryDate.Date)
+                                .Distinct()
+                                .ToList();
+        
+        return 30 - entryDates.Count;
+    }
+
+    private int GetPercentage(int value, int total)
+    {
+        if (total == 0) return 0;
+        return (int)((value / (double)total) * 100);
+    }
+}
