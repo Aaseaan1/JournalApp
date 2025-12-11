@@ -168,3 +168,63 @@ window.playDeleteSound = function() {
         console.log('Audio context not available');
     }
 }
+
+// Morse code S.O.S sound effect - distress signal
+// S = 3 dots, O = 3 dashes, S = 3 dots
+window.playSOSSound = function() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const dotDuration = 0.1;    // Short tone (dot)
+        const dashDuration = 0.3;   // Long tone (dash) = 3x dot
+        const gapDuration = 0.1;    // Gap between tones
+        const charGapDuration = 0.3; // Gap between characters
+        
+        let currentTime = audioContext.currentTime;
+        
+        // Helper function to play a tone
+        function playTone(duration, time, frequency = 800) {
+            const osc = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            osc.frequency.value = frequency;
+            osc.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0, time);
+            gainNode.gain.linearRampToValueAtTime(0.25, time + 0.01);
+            gainNode.gain.linearRampToValueAtTime(0.1, time + duration - 0.01);
+            gainNode.gain.linearRampToValueAtTime(0, time + duration);
+            
+            osc.start(time);
+            osc.stop(time + duration);
+        }
+        
+        // S = 3 dots
+        playTone(dotDuration, currentTime);
+        currentTime += dotDuration + gapDuration;
+        playTone(dotDuration, currentTime);
+        currentTime += dotDuration + gapDuration;
+        playTone(dotDuration, currentTime);
+        currentTime += dotDuration + charGapDuration;
+        
+        // O = 3 dashes
+        playTone(dashDuration, currentTime);
+        currentTime += dashDuration + gapDuration;
+        playTone(dashDuration, currentTime);
+        currentTime += dashDuration + gapDuration;
+        playTone(dashDuration, currentTime);
+        currentTime += dashDuration + charGapDuration;
+        
+        // S = 3 dots
+        playTone(dotDuration, currentTime);
+        currentTime += dotDuration + gapDuration;
+        playTone(dotDuration, currentTime);
+        currentTime += dotDuration + gapDuration;
+        playTone(dotDuration, currentTime);
+    } catch (e) {
+        console.log('Audio context not available');
+    }
+}
