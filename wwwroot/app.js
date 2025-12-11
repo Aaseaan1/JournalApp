@@ -186,10 +186,11 @@ window.playSOSSound = async function() {
     try {
         const audioContext = await window.getJournalAudioContext();
         
-        const dotDuration = 0.18;     // Short tone (dot)
-        const dashDuration = 0.54;    // Long tone (dash) = 3x dot
-        const gapDuration = 0.14;     // Gap between tones
-        const charGapDuration = 0.32; // Gap between characters
+        // Lengthened durations and louder envelope for reliable audibility
+        const dotDuration = 0.22;     // Short tone (dot)
+        const dashDuration = 0.66;    // Long tone (dash) = 3x dot
+        const gapDuration = 0.18;     // Gap between tones
+        const charGapDuration = 0.35; // Gap between characters
         const frequency = 820;
         
         // Helper to play a single tone sequentially
@@ -206,9 +207,9 @@ window.playSOSSound = async function() {
                 
                 // Envelope for clarity without clicks
                 gainNode.gain.setValueAtTime(0, now);
-                gainNode.gain.linearRampToValueAtTime(0.38, now + 0.02);
-                gainNode.gain.linearRampToValueAtTime(0.0001, now + durationSeconds - 0.02);
-                gainNode.gain.setValueAtTime(0, now + durationSeconds);
+                gainNode.gain.linearRampToValueAtTime(0.55, now + 0.02);
+                gainNode.gain.linearRampToValueAtTime(0.05, now + durationSeconds - 0.04);
+                gainNode.gain.linearRampToValueAtTime(0, now + durationSeconds);
                 
                 osc.start(now);
                 osc.stop(now + durationSeconds + 0.02);
