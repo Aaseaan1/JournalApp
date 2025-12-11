@@ -81,8 +81,8 @@ window.playWarningSound = function() {
         osc.connect(gainNode);
         gainNode.connect(audioContext.destination);
         
-        // Lower frequency for warning tone (buzzer-like)
-        osc.frequency.value = 280;
+        // Higher frequency for warning tone (buzzer-like)
+        osc.frequency.value = 520;
         osc.type = 'sine';
         
         // Create a buzzer effect with quick attack and sustained tone
