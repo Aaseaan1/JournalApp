@@ -171,19 +171,21 @@ window.playDeleteSound = function() {
 
 // Morse code S.O.S sound effect - distress signal
 // S = 3 dots, O = 3 dashes, S = 3 dots
-window.playSOSSound = function() {
+window.playSOSSound = async function() {
     try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        await audioContext.resume();
         
-        const dotDuration = 0.1;    // Short tone (dot)
-        const dashDuration = 0.3;   // Long tone (dash) = 3x dot
-        const gapDuration = 0.1;    // Gap between tones
-        const charGapDuration = 0.3; // Gap between characters
+        // Slightly longer durations and stronger tone for clarity
+        const dotDuration = 0.15;     // Short tone (dot)
+        const dashDuration = 0.45;    // Long tone (dash) = 3x dot
+        const gapDuration = 0.12;     // Gap between tones
+        const charGapDuration = 0.25; // Gap between characters
         
         let currentTime = audioContext.currentTime;
         
-        // Helper function to play a tone
-        function playTone(duration, time, frequency = 800) {
+        // Helper to play one tone
+        function playTone(duration, time, frequency = 820) {
             const osc = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
@@ -193,10 +195,11 @@ window.playSOSSound = function() {
             osc.frequency.value = frequency;
             osc.type = 'sine';
             
+            // Soft attack/decay envelope for audibility
             gainNode.gain.setValueAtTime(0, time);
-            gainNode.gain.linearRampToValueAtTime(0.25, time + 0.01);
-            gainNode.gain.linearRampToValueAtTime(0.1, time + duration - 0.01);
-            gainNode.gain.linearRampToValueAtTime(0, time + duration);
+            gainNode.gain.linearRampToValueAtTime(0.3, time + 0.02);
+            gainNode.gain.linearRampToValueAtTime(0.0001, time + duration - 0.02);
+            gainNode.gain.setValueAtTime(0, time + duration);
             
             osc.start(time);
             osc.stop(time + duration);
