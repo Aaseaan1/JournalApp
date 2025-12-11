@@ -180,69 +180,57 @@ window.getJournalAudioContext = async function() {
     return window._journalAudioCtx;
 }
 
-// Morse code S.O.S sound effect - distress signal (sequential playback to avoid single-beep issues)
+// Morse code S.O.S sound effect - distress signal (scheduled in one block for reliability)
 // S = 3 dots, O = 3 dashes, S = 3 dots
 window.playSOSSound = async function() {
     try {
         const audioContext = await window.getJournalAudioContext();
         
-        // Lengthened durations and louder envelope for reliable audibility
-        const dotDuration = 0.22;     // Short tone (dot)
-        const dashDuration = 0.66;    // Long tone (dash) = 3x dot
-        const gapDuration = 0.18;     // Gap between tones
-        const charGapDuration = 0.35; // Gap between characters
-        const frequency = 820;
+        const dot = 0.25;      // seconds
+        const dash = 0.75;     // 3x dot
+        const gap = 0.20;      // between tones
+        const charGap = 0.40;  // between characters
+        const freq = 850;
         
-        // Helper to play a single tone sequentially
-        function playTone(durationSeconds) {
-            return new Promise((resolve) => {
-                const osc = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                osc.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                const now = audioContext.currentTime;
-                osc.frequency.setValueAtTime(frequency, now);
-                osc.type = 'sine';
-                
-                // Envelope for clarity without clicks
-                gainNode.gain.setValueAtTime(0, now);
-                gainNode.gain.linearRampToValueAtTime(0.55, now + 0.02);
-                gainNode.gain.linearRampToValueAtTime(0.05, now + durationSeconds - 0.04);
-                gainNode.gain.linearRampToValueAtTime(0, now + durationSeconds);
-                
-                osc.start(now);
-                osc.stop(now + durationSeconds + 0.02);
-                osc.onended = resolve;
-            });
+        let t = audioContext.currentTime + 0.15; // schedule slightly in future
+        
+        function scheduleTone(duration) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.frequency.setValueAtTime(freq, t);
+            osc.type = 'sine';
+            
+            // Envelope for clarity
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.6, t + 0.03);
+            gain.gain.linearRampToValueAtTime(0.05, t + duration - 0.06);
+            gain.gain.linearRampToValueAtTime(0, t + duration);
+            
+            osc.start(t);
+            osc.stop(t + duration + 0.05);
+            
+            t += duration + gap;
         }
         
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const gapMs = gapDuration * 1000;
-        const charGapMs = charGapDuration * 1000;
+        // S
+        scheduleTone(dot);
+        scheduleTone(dot);
+        scheduleTone(dot);
+        t += charGap - gap; // adjust because scheduleTone already added a gap after last tone
         
-        // S = 3 dots
-        await playTone(dotDuration);
-        await sleep(gapMs);
-        await playTone(dotDuration);
-        await sleep(gapMs);
-        await playTone(dotDuration);
-        await sleep(charGapMs);
+        // O
+        scheduleTone(dash);
+        scheduleTone(dash);
+        scheduleTone(dash);
+        t += charGap - gap;
         
-        // O = 3 dashes
-        await playTone(dashDuration);
-        await sleep(gapMs);
-        await playTone(dashDuration);
-        await sleep(gapMs);
-        await playTone(dashDuration);
-        await sleep(charGapMs);
-        
-        // S = 3 dots
-        await playTone(dotDuration);
-        await sleep(gapMs);
-        await playTone(dotDuration);
-        await sleep(gapMs);
-        await playTone(dotDuration);
+        // S
+        scheduleTone(dot);
+        scheduleTone(dot);
+        scheduleTone(dot);
     } catch (e) {
         console.log('Audio context not available');
     }
