@@ -40,3 +40,31 @@ window.toggleThemeClass = function(isDark) {
         }
     }
 }
+
+// PIN button click sound effect - iPhone notification sound
+window.playPinBeep = function() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create oscillator for iPhone-like tone
+        const osc = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        osc.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // iPhone characteristic tone
+        osc.frequency.value = 540;
+        osc.type = 'sine';
+        
+        // Create the iPhone tone pattern
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.02);
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.08);
+        
+        osc.start(audioContext.currentTime);
+        osc.stop(audioContext.currentTime + 0.08);
+    } catch (e) {
+        console.log('Audio context not available');
+    }
+}

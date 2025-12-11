@@ -4,6 +4,7 @@
 
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
 <PageTitle>Login</PageTitle>
 
@@ -264,6 +265,7 @@
         if (pinValue.Length < 12) // Limit PIN length to 12 digits
         {
             pinValue += digit;
+            _ = PlayPinSound();
         }
     }
 
@@ -353,5 +355,14 @@
         confirmPin = "";
         pin = "";
         setupStep = 0;
+    }
+
+    private async Task PlayPinSound()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("playPinBeep");
+        }
+        catch { }
     }
 }
