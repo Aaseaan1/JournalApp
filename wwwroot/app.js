@@ -169,12 +169,22 @@ window.playDeleteSound = function() {
     }
 }
 
+// Shared audio context helper to avoid repeated creation and suspended state
+window.getJournalAudioContext = async function() {
+    if (!window._journalAudioCtx) {
+        window._journalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (window._journalAudioCtx.state === 'suspended') {
+        await window._journalAudioCtx.resume();
+    }
+    return window._journalAudioCtx;
+}
+
 // Morse code S.O.S sound effect - distress signal
 // S = 3 dots, O = 3 dashes, S = 3 dots
 window.playSOSSound = async function() {
     try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        await audioContext.resume();
+        const audioContext = await window.getJournalAudioContext();
         
         // Slightly longer durations and stronger tone for clarity
         const dotDuration = 0.15;     // Short tone (dot)
@@ -182,7 +192,8 @@ window.playSOSSound = async function() {
         const gapDuration = 0.12;     // Gap between tones
         const charGapDuration = 0.25; // Gap between characters
         
-        let currentTime = audioContext.currentTime;
+        // Start a bit in the future to ensure scheduling happens after resume
+        let currentTime = audioContext.currentTime + 0.05;
         
         // Helper to play one tone
         function playTone(duration, time, frequency = 820) {
@@ -192,17 +203,17 @@ window.playSOSSound = async function() {
             osc.connect(gainNode);
             gainNode.connect(audioContext.destination);
             
-            osc.frequency.value = frequency;
+            osc.frequency.setValueAtTime(frequency, time);
             osc.type = 'sine';
             
             // Soft attack/decay envelope for audibility
             gainNode.gain.setValueAtTime(0, time);
-            gainNode.gain.linearRampToValueAtTime(0.3, time + 0.02);
+            gainNode.gain.linearRampToValueAtTime(0.35, time + 0.02);
             gainNode.gain.linearRampToValueAtTime(0.0001, time + duration - 0.02);
             gainNode.gain.setValueAtTime(0, time + duration);
             
             osc.start(time);
-            osc.stop(time + duration);
+            osc.stop(time + duration + 0.02); // slight tail to avoid cutoff
         }
         
         // S = 3 dots
