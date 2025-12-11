@@ -190,11 +190,12 @@ window.playSOSSound = async function() {
             await audioContext.resume();
         }
         
-        const dot = 0.30;      // seconds
-        const dash = 0.90;     // 3x dot
-        const gap = 0.30;      // between tones
-        const charGap = 0.50;  // between characters
-        const freq = 850;
+        // Safari-safe timings: slower, louder
+        const dot = 0.35;      // seconds
+        const dash = 1.05;     // 3x dot
+        const gap = 0.35;      // between tones
+        const charGap = 0.60;  // between characters
+        const freq = 780;
         
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         
@@ -211,8 +212,8 @@ window.playSOSSound = async function() {
                 
                 // Envelope for clarity
                 gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.70, now + 0.03);
-                gain.gain.linearRampToValueAtTime(0.08, now + duration - 0.06);
+                gain.gain.linearRampToValueAtTime(0.80, now + 0.03);
+                gain.gain.linearRampToValueAtTime(0.15, now + duration - 0.08);
                 gain.gain.linearRampToValueAtTime(0, now + duration);
                 
                 osc.start(now);
@@ -235,7 +236,7 @@ window.playSOSSound = async function() {
         await playTone(dot);
         
         // Close context after playback to free resources (long enough for full pattern)
-        setTimeout(() => audioContext.close(), 8000);
+        setTimeout(() => audioContext.close(), 12000);
     } catch (e) {
         console.log('Audio context not available');
     }
