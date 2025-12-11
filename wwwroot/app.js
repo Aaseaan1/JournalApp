@@ -180,57 +180,62 @@ window.getJournalAudioContext = async function() {
     return window._journalAudioCtx;
 }
 
-// Morse code S.O.S sound effect - distress signal (scheduled in one block for reliability)
+// Morse code S.O.S sound effect - distress signal (sequential with fresh context to avoid single-beep issues)
 // S = 3 dots, O = 3 dashes, S = 3 dots
 window.playSOSSound = async function() {
     try {
-        const audioContext = await window.getJournalAudioContext();
+        // Create a fresh context to avoid suspended/closed reuse issues on some browsers
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+        }
         
         const dot = 0.25;      // seconds
         const dash = 0.75;     // 3x dot
-        const gap = 0.20;      // between tones
-        const charGap = 0.40;  // between characters
+        const gap = 0.22;      // between tones
+        const charGap = 0.45;  // between characters
         const freq = 850;
         
-        let t = audioContext.currentTime + 0.15; // schedule slightly in future
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         
-        function scheduleTone(duration) {
-            const osc = audioContext.createOscillator();
-            const gain = audioContext.createGain();
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            
-            osc.frequency.setValueAtTime(freq, t);
-            osc.type = 'sine';
-            
-            // Envelope for clarity
-            gain.gain.setValueAtTime(0, t);
-            gain.gain.linearRampToValueAtTime(0.6, t + 0.03);
-            gain.gain.linearRampToValueAtTime(0.05, t + duration - 0.06);
-            gain.gain.linearRampToValueAtTime(0, t + duration);
-            
-            osc.start(t);
-            osc.stop(t + duration + 0.05);
-            
-            t += duration + gap;
+        async function playTone(duration) {
+            return new Promise((resolve) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                
+                const now = audioContext.currentTime;
+                osc.frequency.setValueAtTime(freq, now);
+                osc.type = 'sine';
+                
+                // Envelope for clarity
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.65, now + 0.03);
+                gain.gain.linearRampToValueAtTime(0.05, now + duration - 0.05);
+                gain.gain.linearRampToValueAtTime(0, now + duration);
+                
+                osc.start(now);
+                osc.stop(now + duration + 0.05);
+                osc.onended = resolve;
+            });
         }
         
         // S
-        scheduleTone(dot);
-        scheduleTone(dot);
-        scheduleTone(dot);
-        t += charGap - gap; // adjust because scheduleTone already added a gap after last tone
-        
+        await playTone(dot); await sleep(gap * 1000);
+        await playTone(dot); await sleep(gap * 1000);
+        await playTone(dot); await sleep(charGap * 1000);
         // O
-        scheduleTone(dash);
-        scheduleTone(dash);
-        scheduleTone(dash);
-        t += charGap - gap;
-        
+        await playTone(dash); await sleep(gap * 1000);
+        await playTone(dash); await sleep(gap * 1000);
+        await playTone(dash); await sleep(charGap * 1000);
         // S
-        scheduleTone(dot);
-        scheduleTone(dot);
-        scheduleTone(dot);
+        await playTone(dot); await sleep(gap * 1000);
+        await playTone(dot); await sleep(gap * 1000);
+        await playTone(dot);
+        
+        // Close context after playback to free resources
+        setTimeout(() => audioContext.close(), 400);
     } catch (e) {
         console.log('Audio context not available');
     }
