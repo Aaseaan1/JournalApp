@@ -10,6 +10,7 @@
 
 <PageTitle>Export to PDF</PageTitle>
 
+<AuthRequired>
 <div class="container py-5">
     <h1>📄 Export Journal to PDF</h1>
     <hr />
@@ -108,3 +109,4 @@
         await JS.InvokeVoidAsync("downloadFile", fileName, base64);
     }
 }
+</AuthRequired>

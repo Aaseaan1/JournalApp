@@ -9,6 +9,7 @@
 
 <PageTitle>Journal - Home</PageTitle>
 
+<AuthRequired>
 <div class="container py-5">
     <div class="row mb-4">
         <div class="col-md-6">
@@ -22,6 +23,28 @@
         </div>
     </div>
 
+    @if (entries != null && entries.Count > 0)
+    {
+        <div class="row mb-4">
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center">
+                        <h4 class="mb-0">@currentStreak</h4>
+                        <small>Current streak (days)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card text-white bg-secondary">
+                    <div class="card-body text-center">
+                        <h4 class="mb-0">@longestStreak</h4>
+                        <small>Longest streak</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (entries == null)
     {
         <div class="alert alert-info">Loading entries...</div>
@@ -30,7 +53,7 @@
     {
         <div class="alert alert-info" role="alert">
             <h4 class="alert-heading">No entries yet</h4>
-            <p>Start journaling by creating your first entry!</p>
+            <p>Start journalizing by creating your first entry!</p>
         </div>
     }
     else
@@ -83,13 +106,62 @@
         </div>
     }
 </div>
+</AuthRequired>
 
 @code {
     private List<JournalEntry>? entries;
+    private int currentStreak;
+    private int longestStreak;
 
     protected override async Task OnInitializedAsync()
     {
         entries = await JournalService.GetAllEntriesAsync();
+        ComputeStreaks();
+    }
+
+    private void ComputeStreaks()
+    {
+        if (entries == null || entries.Count == 0)
+        {
+            currentStreak = 0;
+            longestStreak = 0;
+            return;
+        }
+
+        var distinctDates = entries.Select(e => e.EntryDate.Date).Distinct().ToList();
+
+        // Current streak: walk backward from today
+        currentStreak = 0;
+        var checkDate = DateTime.Today;
+        foreach (var date in distinctDates.OrderByDescending(d => d))
+        {
+            if (date == checkDate)
+            {
+                currentStreak++;
+                checkDate = checkDate.AddDays(-1);
+            }
+            else if (date < checkDate)
+            {
+                break;
+            }
+        }
+
+        // Longest streak: scan ordered dates
+        var ordered = distinctDates.OrderBy(d => d).ToList();
+        longestStreak = ordered.Count > 0 ? 1 : 0;
+        var run = longestStreak;
+        for (int i = 1; i < ordered.Count; i++)
+        {
+            if ((ordered[i] - ordered[i - 1]).Days == 1)
+            {
+                run++;
+                if (run > longestStreak) longestStreak = run;
+            }
+            else
+            {
+                run = 1;
+            }
+        }
     }
 
     private void CreateEntry()
@@ -114,6 +186,7 @@
         {
             await JournalService.DeleteEntryAsync(id);
             entries = await JournalService.GetAllEntriesAsync();
+            ComputeStreaks();
         }
     }
 }
