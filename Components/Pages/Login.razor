@@ -7,6 +7,107 @@
 
 <PageTitle>Login</PageTitle>
 
+<style>
+    .pin-display {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 30px;
+        min-height: 50px;
+        align-items: center;
+    }
+
+    .pin-dot {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background-color: #007bff;
+    }
+
+    .pin-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .pin-button {
+        aspect-ratio: 1;
+        width: 100%;
+        max-width: 80px;
+        margin: 0 auto;
+        border-radius: 50%;
+        border: 2px solid #007bff;
+        background-color: white;
+        color: #007bff;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pin-button:hover {
+        background-color: #007bff;
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .pin-button:active {
+        transform: scale(0.95);
+    }
+
+    .pin-button-zero {
+        grid-column: 2;
+    }
+
+    .pin-controls {
+        display: flex;
+        gap: 10px;
+    }
+
+    .pin-control-btn {
+        flex: 1;
+        padding: 12px;
+        border-radius: 8px;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .pin-delete-btn {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .pin-delete-btn:hover {
+        background-color: #c82333;
+    }
+
+    .pin-submit-btn {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .pin-submit-btn:hover {
+        background-color: #218838;
+    }
+
+    .dark-mode .pin-button {
+        background-color: #2d2d2d;
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+
+    .dark-mode .pin-button:hover {
+        background-color: #0d6efd;
+        color: white;
+    }
+</style>
+
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
@@ -20,46 +121,120 @@
                             Welcome! Please set up your security PIN to protect your journal.
                         </div>
                         
-                        <EditForm Model="@this" OnValidSubmit="SetupPin">
-                            <div class="mb-3">
-                                <label class="form-label">Create PIN (minimum 4 characters)</label>
-                                <input type="password" class="form-control" @bind="newPin" 
-                                       placeholder="Enter PIN" required minlength="4" />
+                        <div class="mb-4">
+                            <label class="form-label text-center d-block">Create PIN (minimum 4 digits)</label>
+                            <div class="pin-display">
+                                @for (int i = 0; i < newPin.Length; i++)
+                                {
+                                    <div class="pin-dot"></div>
+                                }
                             </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Confirm PIN</label>
-                                <input type="password" class="form-control" @bind="confirmPin" 
-                                       placeholder="Confirm PIN" required minlength="4" />
+                            <div class="pin-grid">
+                                @for (int num = 1; num <= 9; num++)
+                                {
+                                    int number = num;
+                                    <button type="button" class="pin-button" @onclick="() => AppendPin(ref newPin, number.ToString())">
+                                        @number
+                                    </button>
+                                }
+                                <button type="button" class="pin-button pin-button-zero" @onclick="AppendZeroPin">
+                                    0
+                                </button>
                             </div>
-                            
-                            @if (!string.IsNullOrEmpty(errorMessage))
-                            {
-                                <div class="alert alert-danger">@errorMessage</div>
-                            }
-                            
-                            <button type="submit" class="btn btn-primary w-100">Set PIN</button>
-                        </EditForm>
+                            <div class="pin-controls">
+                                <button type="button" class="pin-control-btn pin-delete-btn" @onclick="() => DeletePin(ref newPin)">
+                                    ← Delete
+                                </button>
+                                <button type="button" class="pin-control-btn pin-submit-btn" @onclick="HandleSetupStep1" disabled="@(newPin.Length < 4)">
+                                    Next →
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (setupStep == 1)
+                        {
+                            <div class="mb-4">
+                                <label class="form-label text-center d-block">Confirm PIN</label>
+                                <div class="pin-display">
+                                    @for (int i = 0; i < confirmPin.Length; i++)
+                                    {
+                                        <div class="pin-dot"></div>
+                                    }
+                                </div>
+                                <div class="pin-grid">
+                                    @for (int num = 1; num <= 9; num++)
+                                    {
+                                        int number = num;
+                                        <button type="button" class="pin-button" @onclick="() => AppendPin(ref confirmPin, number.ToString())">
+                                            @number
+                                        </button>
+                                    }
+                                    <button type="button" class="pin-button pin-button-zero" @onclick="AppendZeroConfirmPin">
+                                        0
+                                    </button>
+                                </div>
+                                <div class="pin-controls">
+                                    <button type="button" class="pin-control-btn pin-delete-btn" @onclick="() => DeletePin(ref confirmPin)">
+                                        ← Delete
+                                    </button>
+                                    <button type="button" class="pin-control-btn pin-submit-btn" @onclick="SetupPin" disabled="@(confirmPin.Length < 4)">
+                                        Confirm
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger">@errorMessage</div>
+                        }
+                        
+                        @if (setupStep == 1)
+                        {
+                            <button type="button" class="btn btn-outline-secondary w-100" @onclick="HandleBackButton">
+                                ← Back
+                            </button>
+                        }
                     }
                     else
                     {
-                        <EditForm Model="@this" OnValidSubmit="PerformLogin">
-                            <div class="mb-3">
-                                <label class="form-label">Enter PIN</label>
-                                <input type="password" class="form-control" @bind="pin" 
-                                       placeholder="Enter your PIN" required autofocus />
+                        <div class="mb-4">
+                            <label class="form-label text-center d-block">Enter your PIN</label>
+                            <div class="pin-display">
+                                @for (int i = 0; i < pin.Length; i++)
+                                {
+                                    <div class="pin-dot"></div>
+                                }
                             </div>
-                            
-                            @if (!string.IsNullOrEmpty(errorMessage))
-                            {
-                                <div class="alert alert-danger">@errorMessage</div>
-                            }
-                            
-                            <button type="submit" class="btn btn-primary w-100">Login</button>
-                        </EditForm>
+                            <div class="pin-grid">
+                                @for (int num = 1; num <= 9; num++)
+                                {
+                                    int number = num;
+                                    <button type="button" class="pin-button" @onclick="() => AppendPin(ref pin, number.ToString())">
+                                        @number
+                                    </button>
+                                }
+                                <button type="button" class="pin-button pin-button-zero" @onclick="AppendZeroLoginPin">
+                                    0
+                                </button>
+                            </div>
+                            <div class="pin-controls">
+                                <button type="button" class="pin-control-btn pin-delete-btn" @onclick="() => DeletePin(ref pin)">
+                                    ← Delete
+                                </button>
+                                <button type="button" class="pin-control-btn pin-submit-btn" @onclick="PerformLogin" disabled="@(pin.Length < 4)">
+                                    Login
+                                </button>
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger">@errorMessage</div>
+                        }
                         
                         <hr />
-                        <button class="btn btn-link w-100" @onclick="ResetPin">
+                        <button type="button" class="btn btn-link w-100" @onclick="ResetPin">
                             Forgot PIN? Reset Security
                         </button>
                     }
@@ -74,6 +249,7 @@
     private string newPin = "";
     private string confirmPin = "";
     private string errorMessage = "";
+    private int setupStep = 0;
 
     protected override void OnInitialized()
     {
@@ -83,6 +259,49 @@
         }
     }
 
+    private void AppendPin(ref string pinValue, string digit)
+    {
+        if (pinValue.Length < 12) // Limit PIN length to 12 digits
+        {
+            pinValue += digit;
+        }
+    }
+
+    private void AppendZeroPin()
+    {
+        AppendPin(ref newPin, "0");
+    }
+
+    private void AppendZeroConfirmPin()
+    {
+        AppendPin(ref confirmPin, "0");
+    }
+
+    private void AppendZeroLoginPin()
+    {
+        AppendPin(ref pin, "0");
+    }
+
+    private void DeletePin(ref string pinValue)
+    {
+        if (pinValue.Length > 0)
+        {
+            pinValue = pinValue.Substring(0, pinValue.Length - 1);
+        }
+    }
+
+    private void HandleSetupStep1()
+    {
+        errorMessage = "";
+        setupStep = 1;
+    }
+
+    private void HandleBackButton()
+    {
+        setupStep = 0;
+        confirmPin = "";
+    }
+
     private void SetupPin()
     {
         errorMessage = "";
@@ -90,6 +309,7 @@
         if (newPin != confirmPin)
         {
             errorMessage = "PINs do not match. Please try again.";
+            setupStep = 1;
             return;
         }
 
@@ -102,7 +322,7 @@
         try
         {
             AuthService.SetPin(newPin);
-            NavigationManager.NavigateTo("/");
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
         catch (Exception ex)
         {
@@ -110,13 +330,13 @@
         }
     }
 
-    private void PerformLogin()
+    private async Task PerformLogin()
     {
         errorMessage = "";
         
         if (AuthService.VerifyPin(pin))
         {
-            NavigationManager.NavigateTo("/");
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
         else
         {
@@ -127,10 +347,11 @@
 
     private void ResetPin()
     {
-        // Simply reset without confirmation for now
         AuthService.ResetPin();
         errorMessage = "PIN has been reset. You can now set a new PIN.";
         newPin = "";
         confirmPin = "";
+        pin = "";
+        setupStep = 0;
     }
 }

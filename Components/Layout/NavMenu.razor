@@ -152,13 +152,12 @@
     private void Logout()
     {
         authService.Logout();
-        navigationManager.NavigateTo("/login");
+        navigationManager.NavigateTo("/login", forceLoad: true);
     }
 
     protected override void OnInitialized()
     {
         themeService.OnThemeChanged += StateHasChanged;
-        authService.OnAuthStateChanged += StateHasChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -172,6 +171,5 @@
     public void Dispose()
     {
         themeService.OnThemeChanged -= StateHasChanged;
-        authService.OnAuthStateChanged -= StateHasChanged;
     }
 }

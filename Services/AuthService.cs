@@ -31,7 +31,6 @@ public class AuthService
         storedPinHash = HashPin(pin);
         SavePin();
         isAuthenticated = true;
-        OnAuthStateChanged?.Invoke();
     }
 
     public bool VerifyPin(string pin)
@@ -43,11 +42,6 @@ public class AuthService
 
         var inputHash = HashPin(pin);
         isAuthenticated = inputHash == storedPinHash;
-        
-        if (isAuthenticated)
-        {
-            OnAuthStateChanged?.Invoke();
-        }
 
         return isAuthenticated;
     }
@@ -55,7 +49,6 @@ public class AuthService
     public void Logout()
     {
         isAuthenticated = false;
-        OnAuthStateChanged?.Invoke();
     }
 
     public void ResetPin()
@@ -63,7 +56,6 @@ public class AuthService
         storedPinHash = null;
         isAuthenticated = false;
         SavePin();
-        OnAuthStateChanged?.Invoke();
     }
 
     private string HashPin(string pin)

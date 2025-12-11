@@ -21,7 +21,7 @@ function downloadFile(filename, base64Data) {
 
 // Theme toggle functionality
 window.toggleThemeClass = function(isDark) {
-    const body = document.body;
+    const { body } = document;
     const page = document.querySelector('.page');
     
     if (isDark) {
