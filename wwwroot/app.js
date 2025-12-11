@@ -206,6 +206,7 @@ window.playSOSSound = async function() {
         
         let t = audioContext.currentTime + 0.20; // schedule shortly in future
         
+// sourcery skip: avoid-function-declarations-in-blocks
         function scheduleTone(duration) {
             const osc = audioContext.createOscillator();
             const gain = audioContext.createGain();

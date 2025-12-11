@@ -345,7 +345,7 @@
         else
         {
             errorMessage = "Invalid PIN. Please try again.";
-            await JS.InvokeVoidAsync("playSOSSound");
+            await JS.InvokeVoidAsync("playWarningSound");
             pin = "";
         }
     }

@@ -13,8 +13,8 @@
 <div class="container py-5">
     <div class="row mb-4">
         <div class="col-md-6">
-            <h1 class="display-5"><strong>My Journal 📓</strong></h1>
-            <p class="lead text-muted">Write and reflect on your thoughts</p>
+            <h1 class="display-5 text-center"><strong>My Journal 📓</strong></h1>
+            <p class="lead text-muted text-center">Write and reflect on your thoughts</p>
         </div>
         <div class="col-md-6 text-md-end">
             <button class="btn btn-primary btn-lg" @onclick="CreateEntry">
@@ -51,7 +51,7 @@
     }
     else if (entries.Count == 0)
     {
-        <div class="alert alert-info" role="alert">
+        <div class="alert alert-info text-center" role="alert">
             <h4 class="alert-heading">No entries yet</h4>
             <p>Start journalizing by creating your first entry!</p>
         </div>
